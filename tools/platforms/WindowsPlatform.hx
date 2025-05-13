@@ -549,8 +549,8 @@ class WindowsPlatform extends PlatformTarget
 			}
 			else
 			{
-				var haxeArgs = [hxml, "-D", "resourceFile=ApplicationMain.rc"];
-				var flags = ["-DresourceFile=ApplicationMain.rc"];
+				var haxeArgs = [hxml];
+				var flags = [];
 
 				if (is64)
 				{
@@ -1012,8 +1012,6 @@ class WindowsPlatform extends PlatformTarget
 		}
 		else if (targetType == "cpp")
 		{
-			ProjectHelper.recursiveSmartCopyTemplate(project, "windows/resource", targetDirectory + "/obj", context);
-
 			if (project.targetFlags.exists("static"))
 			{
 				ProjectHelper.recursiveSmartCopyTemplate(project, "cpp/static", targetDirectory + "/obj", context);
@@ -1541,7 +1539,7 @@ class WindowsPlatform extends PlatformTarget
 					System.copyFile(appxDir + "scripts/" + pfxFileName, pfxPath);
 					if (!sys.FileSystem.exists(pfxPath))
 					{
-						Log.error("could not copy " + appxDir + pfxFileName + " to " + pfxPath);
+						Log.error("Could not copy " + appxDir + pfxFileName + " to " + pfxPath);
 					}
 				}
 			}
