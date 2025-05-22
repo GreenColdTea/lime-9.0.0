@@ -135,6 +135,17 @@ class AndroidPlatform extends PlatformTarget
 		var hxml = targetDirectory + "/haxe/" + buildType + ".hxml";
 		var sourceSet = destination + "/app/src/main";
 
+		if (project.targetFlags.exists("ONLY_ARMV5"))
+			project.architectures = [Architecture.ARMV5];
+		else if (project.targetFlags.exists("ONLY_ARMV7"))
+			project.architectures = [Architecture.ARMV7];
+		else if (project.targetFlags.exists("ONLY_ARM64"))
+			project.architectures = [Architecture.ARM64];
+		else if (project.targetFlags.exists("ONLY_X86"))
+			project.architectures = [Architecture.X86];
+		else if (project.targetFlags.exists("ONLY_X86_64"))
+			project.architectures = [Architecture.X64];
+
 		var hasARMV5 = (ArrayTools.containsValue(project.architectures, Architecture.ARMV5)
 			|| ArrayTools.containsValue(project.architectures, Architecture.ARMV6));
 		var hasARMV7 = ArrayTools.containsValue(project.architectures, Architecture.ARMV7);
@@ -470,7 +481,7 @@ class AndroidPlatform extends PlatformTarget
 		context.OUTPUT_DIR = targetDirectory;
 		context.ANDROID_INSTALL_LOCATION = project.config.getString("android.install-location", "auto");
 		context.ANDROID_MINIMUM_SDK_VERSION = project.config.getInt("android.minimum-sdk-version", 21);
-		context.ANDROID_TARGET_SDK_VERSION = project.config.getInt("android.target-sdk-version", 34);
+		context.ANDROID_TARGET_SDK_VERSION = project.config.getInt("android.target-sdk-version", 35);
 		context.ANDROID_EXTENSIONS = project.config.getArrayString("android.extension");
 		context.ANDROID_PERMISSIONS = project.config.getArrayString("android.permission", [
 			"android.permission.WAKE_LOCK",

@@ -88,6 +88,7 @@
 
 		<ndll name="lime" if="native" unless="lime-console static_link || lime-switch static_link" />
 
+		<dependency name="androidtools" path="dependencies/androidtools" if="android" />
 		<dependency name="extension-api" path="dependencies/extension-api" if="android" />
 
 		<dependency path="dependencies/howler.min.js" if="html5 howlerjs" embed="true" />
