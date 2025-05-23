@@ -1,10 +1,16 @@
 package org.haxe.lime;
 
-
 import android.content.Context;
+import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
+import android.media.AudioManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
+::if (ANDROID_USE_ANDROIDX)::
+import androidx.core.content.FileProvider;
+import ::APP_PACKAGE::.BuildConfig;
+::end::
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -23,7 +29,9 @@ import android.view.WindowManager;
 import android.webkit.MimeTypeMap;
 import android.Manifest;
 import org.haxe.extension.Extension;
+import android.view.WindowManager;
 import org.libsdl.app.SDLActivity;
+import org.haxe.lime.FileDialog;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -33,8 +41,13 @@ import java.util.List;
 public class GameActivity extends SDLActivity {
 
 
+	private static AudioManager audioManager;
+	private static AudioFocusRequest audioFocusRequest;
+	private static AudioManager.OnAudioFocusChangeListener afChangeListener;
 	private static AssetManager assetManager;
 	private static List<Extension> extensions;
+	// TODO: Handle the rest of the callbacks for filedialogs?
+	private static List<FileDialog> filedialogs;
 	private static DisplayMetrics metrics;
 	private static DisplayCutout displayCutout;
 	private static Vibrator vibrator;
@@ -134,6 +147,12 @@ public class GameActivity extends SDLActivity {
 
 		}
 
+		if (filedialogs != null) {
+			for (FileDialog fileDialog : filedialogs) {
+				fileDialog.onActivityResult (requestCode, resultCode, data);
+			}
+		}
+
 		super.onActivityResult (requestCode, resultCode, data);
 
 	}
@@ -155,8 +174,24 @@ public class GameActivity extends SDLActivity {
 
 	}
 
+	public static FileDialog creatFileDialog(final HaxeObject haxeObject)
+	{
+		FileDialog fileDialog = new FileDialog(haxeObject);
+		if (filedialogs == null)
+		{
+			filedialogs = new ArrayList<FileDialog> ();
+		}
+		filedialogs.add(fileDialog);
+		return fileDialog;
+	}
 
 	protected void onCreate (Bundle state) {
+
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+
+			getWindow ().addFlags (WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+
+		}
 
 		super.onCreate (state);
 
@@ -193,6 +228,37 @@ public class GameActivity extends SDLActivity {
 			}
 
 		};
+
+		audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+
+		afChangeListener = new AudioManager.OnAudioFocusChangeListener() {
+			@Override
+			public void onAudioFocusChange(int focusChange) {
+				switch (focusChange) {
+					case AudioManager.AUDIOFOCUS_GAIN:
+						break;
+					case AudioManager.AUDIOFOCUS_LOSS:
+						break;
+					case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+						break;
+					case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+						break;
+				}
+			}
+		};
+
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+			AudioAttributes audioAttributes = new AudioAttributes.Builder()
+					.setUsage(AudioAttributes.USAGE_GAME)
+					.setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+					.build();
+
+			audioFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+					.setAudioAttributes(audioAttributes)
+					.setOnAudioFocusChangeListener(afChangeListener)
+					.setAcceptsDelayedFocusGain(true)
+					.build();
+		}
 
 		assetManager = getAssets ();
 
@@ -253,6 +319,11 @@ public class GameActivity extends SDLActivity {
 
 		}
 
+		if (filedialogs != null) {
+			for (FileDialog fileDialog : filedialogs) {
+				fileDialog.onCreate (state);
+			}
+		}
 	}
 
 
@@ -354,6 +425,20 @@ public class GameActivity extends SDLActivity {
 
 		orientationListener.enable();
 
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
+			audioManager.requestAudioFocus(audioFocusRequest);
+
+		} else {
+
+			audioManager.requestAudioFocus(
+				afChangeListener,
+				AudioManager.STREAM_MUSIC,
+				AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
+			);
+
+		}
+
 		for (Extension extension : extensions) {
 
 			extension.onResume ();
@@ -406,6 +491,16 @@ public class GameActivity extends SDLActivity {
 
 		super.onStop ();
 
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
+			audioManager.abandonAudioFocusRequest(audioFocusRequest);
+
+		} else {
+
+			audioManager.abandonAudioFocus(afChangeListener);
+
+		}
+
 		for (Extension extension : extensions) {
 
 			extension.onStop ();
@@ -434,35 +529,40 @@ public class GameActivity extends SDLActivity {
 	::end::
 
 
-	public static void openFile (String path) {
+	public static void openFile(String path) {
+    	try {
+        	String extension = path;
+        	int index = path.lastIndexOf('.');
 
-		try {
+        	if (index > 0) {
+         	   extension = path.substring(index + 1);
+        	}
 
-			String extension = path;
-			int index = path.lastIndexOf ('.');
+        	String mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
+        	File file = new File(path);
 
-			if (index > 0) {
-
-				extension = path.substring (index + 1);
-
+			Uri uri;
+			::if (ANDROID_USE_ANDROIDX)::
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) { // Android 7.0+
+    			uri = FileProvider.getUriForFile(Extension.mainActivity, BuildConfig.APPLICATION_ID + ".fileprovider", file);
+			} else { // Android 5.0 - 6.0
+    			uri = Uri.fromFile(file);
 			}
+			::else::
+			uri = Uri.fromFile(file);
+			::end::
 
-			String mimeType = MimeTypeMap.getSingleton ().getMimeTypeFromExtension (extension);
-			File file = new File (path);
+        	Intent intent = new Intent();
+        	intent.setAction(Intent.ACTION_VIEW);
+        	intent.setDataAndType(uri, mimeType);
+			intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        	//intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-			Intent intent = new Intent ();
-			intent.setAction (Intent.ACTION_VIEW);
-			intent.setDataAndType (Uri.fromFile (file), mimeType);
+        	Extension.mainActivity.startActivity(intent);
 
-			Extension.mainActivity.startActivity (intent);
-
-		} catch (Exception e) {
-
-			Log.e ("GameActivity", e.toString ());
-			return;
-
-		}
-
+    	} catch (Exception e) {
+			Log.e("GameActivity", e.toString());
+    	}
 	}
 
 
