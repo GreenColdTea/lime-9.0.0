@@ -160,7 +160,7 @@ create_aar_androidmanifest() {
     package="org.libsdl.android" android:versionCode="1"
     android:versionName="1.0">
 	<uses-sdk android:minSdkVersion="16"
-              android:targetSdkVersion="36"/>
+              android:targetSdkVersion="29"/>
 </manifest>
 EOF
 }

@@ -11,10 +11,10 @@ android {
     if (buildAsApplication) {
         namespace "org.libsdl.app"
     }
-    compileSdkVersion 36
+    compileSdkVersion 34
     defaultConfig {
         minSdkVersion 19
-        targetSdkVersion 36
+        targetSdkVersion 34
         versionCode 1
         versionName "1.0"
         externalNativeBuild {
@@ -51,7 +51,7 @@ android {
             //     path 'jni/CMakeLists.txt'
             // }
         }
-
+       
     }
     lint {
         abortOnError false
@@ -71,6 +71,5 @@ android {
 }
 
 dependencies {
-    implementation 'com.google.android.material:material:1.11.0'
     implementation fileTree(include: ['*.jar'], dir: 'libs')
 }
