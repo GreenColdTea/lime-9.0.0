@@ -275,8 +275,8 @@ class LinuxPlatform extends PlatformTarget
 		}
 		else
 		{
-			var haxeArgs = [hxml];
-			var flags = [];
+			var haxeArgs:Array<String> = [hxml];
+			var flags:Array<String> = [];
 
 			if (is64)
 			{
@@ -466,9 +466,9 @@ class LinuxPlatform extends PlatformTarget
 
 	public override function rebuild():Void
 	{
-		var commands = [];
+		var commands:Array<Array<String>> = [];
 
-		if (System.hostArchitecture == ARM64 )
+		if (targetFlags.exists('rpi') && System.hostArchitecture == ARM64 )
 		{
 			commands.push([
 				"-Dlinux",
@@ -482,7 +482,7 @@ class LinuxPlatform extends PlatformTarget
 				"-DHXCPP_RANLIB=aarch64-linux-gnu-ranlib"
 			]);
 		}
-		else if (System.hostArchitecture == ARMV7)
+		else if (targetFlags.exists('rpi') && System.hostArchitecture == ARMV7)
 		{
 			commands.push([
 				"-Dlinux",
@@ -500,6 +500,15 @@ class LinuxPlatform extends PlatformTarget
 		{
 			// TODO: Support single binary
 			commands.push(["-Dlinux", "-DHXCPP_M64", "-Dhashlink"]);
+		}
+		else if (System.hostArchitecture == ARM64 )
+		{
+			commands.push([
+				"-Dlinux",
+				"-Dtoolchain=linux",
+				"-DBINDIR=LinuxArm64",
+				"-DHXCPP_ARM64",
+			]);
 		}
 		else
 		{
