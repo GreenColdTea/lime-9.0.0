@@ -1,7 +1,6 @@
 #ifndef LIME_SDL_APPLICATION_H
 #define LIME_SDL_APPLICATION_H
 
-
 #include <SDL.h>
 #include <app/Application.h>
 #include <app/ApplicationEvent.h>
@@ -18,10 +17,9 @@
 #include <ui/TouchEvent.h>
 #include <ui/WindowEvent.h>
 #include "SDLWindow.h"
-
+#include <vector>
 
 namespace lime {
-
 
 	class SDLApplication : public Application {
 
@@ -37,6 +35,9 @@ namespace lime {
 			virtual bool Update ();
 
 			void RegisterWindow (SDLWindow *window);
+			
+			void AddWindow(SDLWindow* window);
+			void RemoveWindow(SDLWindow* window);
 
 		private:
 
@@ -79,11 +80,11 @@ namespace lime {
 			TextEvent textEvent;
 			TouchEvent touchEvent;
 			WindowEvent windowEvent;
+			
+			std::vector<SDLWindow*> windows;
 
 	};
 
-
 }
-
 
 #endif

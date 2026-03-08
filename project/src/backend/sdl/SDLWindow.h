@@ -69,6 +69,7 @@ namespace lime {
 			SDL_Renderer* sdlRenderer;
 			SDL_Texture* sdlTexture;
 			SDL_Window* sdlWindow;
+			uint32_t windowID;
 
 		private:
 

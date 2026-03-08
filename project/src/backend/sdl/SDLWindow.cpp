@@ -38,6 +38,7 @@ namespace lime {
 		sdlTexture = 0;
 		sdlRenderer = 0;
 		context = 0;
+		windowID = 0;
 
 		contextWidth = 0;
 		contextHeight = 0;
@@ -168,6 +169,8 @@ namespace lime {
 			return;
 
 		}
+
+		windowID = SDL_GetWindowID(sdlWindow);
 
 		#if defined (HX_WINDOWS) && !defined (HX_WINRT)
 
@@ -606,9 +609,7 @@ namespace lime {
 
 
 	uint32_t SDLWindow::GetID () {
-
-		return SDL_GetWindowID (sdlWindow);
-
+		return windowID;
 	}
 
 

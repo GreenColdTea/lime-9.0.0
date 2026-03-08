@@ -225,7 +225,9 @@ namespace lime {
 					double start = getTime();
 
 					ApplicationEvent::Dispatch (&applicationEvent);
-					RenderEvent::Dispatch (&renderEvent);
+
+					renderEvent.windowID = event->user.code;
+        			RenderEvent::Dispatch (&renderEvent);
 
 					double end = getTime();
 					double remainder = end - start;
@@ -325,6 +327,8 @@ namespace lime {
 			#ifndef EMSCRIPTEN
 			case SDL_RENDER_DEVICE_RESET:
 
+				renderEvent.windowID = 0;
+
 				renderEvent.type = RENDER_CONTEXT_LOST;
 				RenderEvent::Dispatch (&renderEvent);
 
@@ -365,6 +369,7 @@ namespace lime {
 
 						if (!inBackground) {
 
+							renderEvent.windowID = event->window.windowID;
 							RenderEvent::Dispatch (&renderEvent);
 
 						}
@@ -377,6 +382,7 @@ namespace lime {
 
 						if (!inBackground) {
 
+							renderEvent.windowID = event->window.windowID;
 							RenderEvent::Dispatch (&renderEvent);
 
 						}
@@ -906,6 +912,13 @@ namespace lime {
 
 	void SDLApplication::RegisterWindow (SDLWindow *window) {
 
+		if (window && window->sdlWindow) {
+			if (window->windowID == 0) {
+				window->windowID = SDL_GetWindowID(window->sdlWindow);
+			}
+			AddWindow(window);
+		}
+
 		#ifdef IPHONE
 		SDL_iPhoneSetAnimationCallback (window->sdlWindow, 1, UpdateFrame, NULL);
 		#endif
@@ -927,11 +940,11 @@ namespace lime {
 
 	}
 
-	void PushUpdate(void) {
+	void PushUpdate(int windowID) {
 		SDL_Event event;
 		SDL_UserEvent userevent;
 		userevent.type = SDL_USEREVENT;
-		userevent.code = 0;
+		userevent.code = windowID;
 		userevent.data1 = NULL;
 		userevent.data2 = NULL;
 		event.type = SDL_USEREVENT;
@@ -954,7 +967,11 @@ namespace lime {
 		nextUpdate += dt;
 
 		if(nextUpdate >= framePeriod) {
-			PushUpdate();
+			for (auto window : windows) {
+				if (window) {
+					PushUpdate(window->windowID);
+				}
+			}
 			nextUpdate -= framePeriod;
 		}
 		SDL_Event event;
@@ -965,6 +982,20 @@ namespace lime {
 				return active;
 		}
 		return active;
+	}
+
+
+	void SDLApplication::AddWindow(SDLWindow* window) {
+		windows.push_back(window);
+	}
+
+	void SDLApplication::RemoveWindow(SDLWindow* window) {
+		for (auto it = windows.begin(); it != windows.end(); ++it) {
+			if (*it == window) {
+				windows.erase(it);
+				break;
+			}
+		}
 	}
 
 

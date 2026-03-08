@@ -404,56 +404,47 @@ class NativeApplication
 
 	private function handleRenderEvent():Void
 	{
-		// TODO: Allow windows to render independently
+		var window = parent.__windowByID.get(renderEventInfo.windowID);
+		if (window == null) return;
 
-		for (window in parent.__windows)
+		switch (renderEventInfo.type)
 		{
-			if (window == null) continue;
+			case RENDER:
+				if (window.context != null)
+				{
+					window.__backend.render();
+					window.onRender.dispatch(window.context);
 
-			// parent.renderer = renderer;
-
-			switch (renderEventInfo.type)
-			{
-				case RENDER:
-					if (window.context != null)
+					if (!window.onRender.canceled)
 					{
-						window.__backend.render();
-						window.onRender.dispatch(window.context);
+						window.__backend.contextFlip();
+					}
+				}
 
-						if (!window.onRender.canceled)
-						{
-							window.__backend.contextFlip();
-						}
+			case RENDER_CONTEXT_LOST:
+				if (window.__backend.useHardware && window.context != null)
+				{
+					switch (window.context.type)
+					{
+						case OPENGL, OPENGLES, WEBGL:
+							#if (lime_cffi && (lime_opengl || lime_opengles) && !display)
+							var gl = window.context.gl;
+							(gl : NativeOpenGLRenderContext).__contextLost();
+							if (GL.context == gl) GL.context = null;
+							#end
+
+						default:
 					}
 
-				case RENDER_CONTEXT_LOST:
-					if (window.__backend.useHardware && window.context != null)
-					{
-						switch (window.context.type)
-						{
-							case OPENGL, OPENGLES, WEBGL:
-								#if (lime_cffi && (lime_opengl || lime_opengles) && !display)
-								var gl = window.context.gl;
-								(gl : NativeOpenGLRenderContext).__contextLost();
-								if (GL.context == gl) GL.context = null;
-								#end
+					window.context = null;
+					window.onRenderContextLost.dispatch();
+				}
 
-							default:
-						}
-
-						window.context = null;
-						window.onRenderContextLost.dispatch();
-					}
-
-				case RENDER_CONTEXT_RESTORED:
-					if (window.__backend.useHardware)
-					{
-						// GL.context = new OpenGLRenderContext ();
-						// window.context.gl = GL.context;
-
-						window.onRenderContextRestored.dispatch(window.context);
-					}
-			}
+			case RENDER_CONTEXT_RESTORED:
+				if (window.__backend.useHardware)
+				{
+					window.onRenderContextRestored.dispatch(window.context);
+				}
 		}
 	}
 
@@ -868,15 +859,17 @@ class NativeApplication
 @:keep /*private*/ class RenderEventInfo
 {
 	public var type:RenderEventType;
+	public var windowID:Int;
 
-	public function new(type:RenderEventType = null)
+	public function new(type:RenderEventType = null, windowID:Int = 0)
 	{
 		this.type = type;
+		this.windowID = windowID;
 	}
 
 	public function clone():RenderEventInfo
 	{
-		return new RenderEventInfo(type);
+		return new RenderEventInfo(type, windowID);
 	}
 }
 
