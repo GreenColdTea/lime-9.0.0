@@ -3,6 +3,8 @@
 Lime
 ====
 
+Moved To FunkinCrew fork of lime!!!
+
 Lime is a flexible, lightweight layer for Haxe cross-platform developers.
 
 Lime supports native, Flash and HTML5 targets with unified support for:
